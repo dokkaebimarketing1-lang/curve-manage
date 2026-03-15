@@ -1,3 +1,14 @@
--rw-r--r-- 1 LGS_002 197121 1804  3월 16 00:19 src/components/ui/button.tsx
--rw-r--r-- 1 LGS_002 197121 3709  3월 16 00:20 src/components/ui/dialog.tsx
--rw-r--r-- 1 LGS_002 197121 2734  3월 16 00:20 src/components/ui/table.tsx
+SHADCN COMPONENTS CHECK:
+button.tsx: src/components/ui/button.tsx
+FOUND
+table.tsx: src/components/ui/table.tsx
+FOUND
+dialog.tsx: src/components/ui/dialog.tsx
+FOUND
+input.tsx: src/components/ui/input.tsx
+FOUND
+badge.tsx: src/components/ui/badge.tsx
+FOUND
+skeleton.tsx: src/components/ui/skeleton.tsx
+FOUND
+All 16 components: 16 found

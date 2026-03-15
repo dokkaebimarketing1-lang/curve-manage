@@ -218,7 +218,7 @@ Max Concurrent: 6 (Waves 3, 4)
 
 ## TODOs
 
-- [ ] 1. Next.js 15 + Tailwind + Shadcn UI 프로젝트 스캐폴딩
+- [x] 1. Next.js 15 + Tailwind + Shadcn UI 프로젝트 스캐폴딩
 
   **What to do**:
   - `bunx create-next-app@latest` 으로 Next.js 15 프로젝트 생성 (App Router, TypeScript, Tailwind CSS, src/ 디렉토리 사용)
@@ -283,7 +283,7 @@ Max Concurrent: 6 (Waves 3, 4)
   - Files: `package.json, tailwind.config.ts, components.json, src/`
   - Pre-commit: `bun run build`
 
-- [ ] 2. Supabase 클라이언트 설정
+- [x] 2. Supabase 클라이언트 설정
 
   **What to do**:
   - `bun add @supabase/supabase-js @supabase/ssr` 설치
@@ -334,7 +334,7 @@ Max Concurrent: 6 (Waves 3, 4)
   - Files: `src/lib/supabase/`
   - Pre-commit: `bunx tsc --noEmit`
 
-- [ ] 3. DB 스키마 설계 + 마이그레이션
+- [x] 3. DB 스키마 설계 + 마이그레이션
 
   **What to do**:
   - `supabase/migrations/` 디렉토리에 SQL 마이그레이션 파일 생성
@@ -391,7 +391,7 @@ Max Concurrent: 6 (Waves 3, 4)
   - Files: `supabase/migrations/, src/lib/types/database.ts`
   - Pre-commit: `bunx tsc --noEmit`
 
-- [ ] 4. UI 공통 컴포넌트 (레이아웃, 네비게이션)
+- [x] 4. UI 공통 컴포넌트 (레이아웃, 네비게이션)
 
   **What to do**:
   - `src/app/layout.tsx` — 루트 레이아웃 (한국어, Pretendard/Noto Sans KR 폰트)
@@ -453,7 +453,7 @@ Max Concurrent: 6 (Waves 3, 4)
   - Files: `src/app/layout.tsx, src/components/layout/, src/app/influencers/, src/app/ads/, src/app/import/`
   - Pre-commit: `bun run build`
 
-- [ ] 5. 디자인 시스템 토큰 + 색상 태그 시스템
+- [x] 5. 디자인 시스템 토큰 + 색상 태그 시스템
 
   **What to do**:
   - `src/lib/design/colors.ts` — 컬러 태그 시스템 정의 (유광기 참조: 선호=green, 검토중=yellow, PPL확정=blue, 진행중=orange, 완료=gray, 거절=red 등 최소 8개 색상)
@@ -500,7 +500,7 @@ Max Concurrent: 6 (Waves 3, 4)
   - Files: `src/lib/design/, src/components/ui/color-badge.tsx, src/components/ui/image-cell.tsx`
   - Pre-commit: `bunx tsc --noEmit`
 
-- [ ] 6. 인플루언서 CRUD Server Actions
+- [x] 6. 인플루언서 CRUD Server Actions
 
   **What to do**:
   - `src/lib/actions/influencer.ts` — Server Actions:
@@ -549,7 +549,7 @@ Max Concurrent: 6 (Waves 3, 4)
   - Files: `src/lib/actions/influencer.ts`
   - Pre-commit: `bunx tsc --noEmit`
 
-- [ ] 7. 카테고리/태그 시스템 + 필터 쿼리 빌더
+- [x] 7. 카테고리/태그 시스템 + 필터 쿼리 빌더
 
   **What to do**:
   - `src/lib/filters/influencer-filters.ts`:
@@ -599,7 +599,7 @@ Max Concurrent: 6 (Waves 3, 4)
   - Files: `src/lib/filters/`
   - Pre-commit: `bunx tsc --noEmit`
 
-- [ ] 8. CSV 파서 + 필드 검증 + 정규화
+- [x] 8. CSV 파서 + 필드 검증 + 정규화
 
   **What to do**:
   - `src/lib/csv/parser.ts`:
@@ -644,7 +644,7 @@ Max Concurrent: 6 (Waves 3, 4)
   - Files: `src/lib/csv/`
   - Pre-commit: `bunx tsc --noEmit`
 
-- [ ] 9. 이미지 업로드 서비스 (Supabase Storage)
+- [x] 9. 이미지 업로드 서비스 (Supabase Storage)
 
   **What to do**:
   - `src/lib/storage/image-service.ts`:
@@ -700,7 +700,7 @@ Max Concurrent: 6 (Waves 3, 4)
   - Files: `src/lib/storage/`
   - Pre-commit: `bun run build`
 
-- [ ] 10. 크롤링 엔진 — YouTube Data API v3
+- [x] 10. 크롤링 엔진 — YouTube Data API v3
 
   **What to do**:
   - `src/lib/crawlers/youtube.ts`:

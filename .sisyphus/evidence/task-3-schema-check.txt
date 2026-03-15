@@ -1,0 +1,10 @@
+T3 SCHEMA VERIFICATION:
+SQL file: supabase/migrations/001_initial_schema.sql
+FOUND
+Types file: src/lib/types/database.ts
+FOUND
+influencers table: 1 table definition(s)
+ad_cards table: 1 table definition(s)
+folders table: 1 table definition(s)
+tab_category default: 2 occurrence(s)
+TypeScript check: PASSED (exit 0)

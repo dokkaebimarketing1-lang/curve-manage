@@ -1,0 +1,24 @@
+Task 11 - Instagram crawler verification
+Date: 2026-03-16
+
+1) File creation and exports
+- Created: src/lib/crawlers/instagram.ts
+- Exported interface: InstagramCrawlResult
+- Exported functions (3):
+  - isInstagramUrl(url: string): boolean
+  - crawlInstagramProfile(profileUrl: string): Promise<InstagramCrawlResult>
+  - crawlInstagramPost(postUrl: string): Promise<InstagramCrawlResult>
+
+2) Required behavior implemented
+- HTTP-only crawler using fetch (no Puppeteer/Playwright)
+- User-Agent header included for profile/post requests
+- OG tag parsing for og:image
+- 8-second timeout via AbortController
+- Failure returns platform='instagram' with explicit Korean error messages
+
+3) TypeScript check
+- Command: npx tsc --noEmit
+- Result: PASS (exit 0)
+
+4) Diagnostics
+- lsp_diagnostics on src/lib/crawlers/instagram.ts: clean (no issues)

@@ -1,0 +1,28 @@
+=== Task 19: ads.ts CRUD Server Actions ===
+
+--- File exists ---
+-rw-r--r-- 1 LGS_002 197121 6095  3월 16 00:54 src/lib/actions/ads.ts
+
+--- Exported functions (9 expected) ---
+9
+export async function getFolders(): Promise<ActionResult<Folder[]>>
+export async function createFolder(name: string, parentId?: string): Promise<ActionResult<Folder>>
+export async function updateFolder(id: string, name: string): Promise<ActionResult<Folder>>
+export async function deleteFolder(id: string): Promise<ActionResult>
+export async function getAdCards(folderId?: string | null): Promise<ActionResult<AdCard[]>>
+export async function createAdCard(data: Partial<AdCardInsert>): Promise<ActionResult<AdCard>>
+export async function updateAdCard(id: string, data: AdCardUpdate): Promise<ActionResult<AdCard>>
+export async function deleteAdCard(id: string): Promise<ActionResult>
+export async function moveAdCard(cardId: string, targetFolderId: string | null): Promise<ActionResult<AdCard>>
+
+--- TypeScript check ---
+npx tsc --noEmit → exit 0
+tsc: PASS
+
+--- Implementation Notes ---
+- 'use server' directive at top
+- try/catch + ActionResult pattern (matches T6 influencer.ts)
+- revalidatePath('/ads') on all mutations
+- deleteAdCard extracts storage path from thumbnail_url and calls deleteImage
+- getAdCards: undefined=ALL, null=unfoldered, string=specific folder
+- getFolders ordered by sort_order, parent_id

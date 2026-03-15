@@ -1,0 +1,27 @@
+Task 12 - TikTok crawler verification
+Date: 2026-03-16
+
+1) File creation and exports
+- Created: src/lib/crawlers/tiktok.ts
+- Exported interface: TikTokVideo
+- Exported interface: TikTokCrawlResult
+- Exported functions (3):
+  - isTikTokUrl(url: string): boolean
+  - crawlTikTokProfile(profileUrl: string): Promise<TikTokCrawlResult>
+  - crawlTikTokVideo(videoUrl: string): Promise<TikTokCrawlResult>
+
+2) Required behavior implemented
+- HTTP-only crawler using fetch (no Puppeteer/TikTok API)
+- Chrome User-Agent included in requests
+- 8-second timeout via AbortController
+- Hydration data parse from __UNIVERSAL_DATA_FOR_REHYDRATION__ script
+- Profile crawl uses OG tag fallback (og:image)
+- Video crawl extracts OG image thumbnail (og:image)
+- Returns image URLs only (no storage writes)
+
+3) TypeScript check
+- Command: npx tsc --noEmit
+- Result: PASS (exit 0)
+
+4) Diagnostics
+- lsp_diagnostics on src/lib/crawlers/tiktok.ts: clean (no issues)

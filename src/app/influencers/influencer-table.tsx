@@ -1,0 +1,365 @@
+'use client'
+
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  flexRender,
+  SortingState,
+  RowSelectionState,
+  VisibilityState,
+} from '@tanstack/react-table'
+import { columns as allColumns } from './columns'
+import { Influencer, TabCategory } from '@/lib/types/database'
+import { createInfluencer, deleteInfluencer, updateInfluencerField } from '@/lib/actions/influencer'
+import { TAB_PRESETS } from '@/lib/filters/influencer-filters'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Users, Search, Plus, Download, Columns3, Trash2, FolderInput, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { TAB_CATEGORIES } from '@/lib/design/constants'
+import { DetailPanel } from './detail-panel'
+
+interface InfluencerTableProps {
+  initialData: Influencer[]
+  tabCounts?: Record<string, number>
+}
+
+// CSV 내보내기
+function exportToCsv(rows: Influencer[]) {
+  const headers = ['NO', '닉네임', 'URL', '분류', '협업형태', '카테고리', '팔로워수', '성함', '성별', '연락처', '무조건', '선정이유', '비고', '메일', '단가']
+  const keys: (keyof Influencer)[] = ['no', 'nickname', 'url', 'classification', 'collaboration_type', 'category', 'follower_count', 'real_name', 'gender', 'contact', 'must_do', 'selection_reason', 'notes', 'email', 'rate']
+
+  const csvRows = [
+    headers.join(','),
+    ...rows.map(row => keys.map(k => {
+      const v = row[k]
+      const str = v === null || v === undefined ? '' : String(v)
+      return `"${str.replace(/"/g, '""')}"`
+    }).join(','))
+  ]
+  const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `influencers_${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTableProps) {
+  const data = initialData
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [searchText, setSearchText] = useState(searchParams.get('search') ?? '')
+  const [creating, setCreating] = useState(false)
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [showColumnMenu, setShowColumnMenu] = useState(false)
+  const [bulkAction, setBulkAction] = useState(false)
+  const [detailRow, setDetailRow] = useState<Influencer | null>(null)
+
+  useEffect(() => {
+    setSearchText(searchParams.get('search') ?? '')
+  }, [searchParams])
+
+  const updateQuery = useCallback(
+    (mutate: (params: URLSearchParams) => void) => {
+      const params = new URLSearchParams(searchParams.toString())
+      mutate(params)
+      const query = params.toString()
+      router.push(query ? `${pathname}?${query}` : pathname)
+    },
+    [pathname, router, searchParams]
+  )
+
+  const handleTabChange = useCallback(
+    (tab: string) => {
+      updateQuery((params) => {
+        if (tab === 'all') params.delete('tab')
+        else params.set('tab', tab)
+      })
+    },
+    [updateQuery]
+  )
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const currentSearch = searchParams.get('search') ?? ''
+      const nextSearch = searchText.trim()
+      if (currentSearch === nextSearch) return
+      updateQuery((params) => {
+        if (nextSearch) params.set('search', nextSearch)
+        else params.delete('search')
+      })
+    }, 300)
+    return () => window.clearTimeout(timer)
+  }, [searchParams, searchText, updateQuery])
+
+  const handleCreate = async () => {
+    setCreating(true)
+    try {
+      await createInfluencer({})
+      toast.success('추가 완료')
+      router.refresh()
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  // 벌크 삭제
+  const handleBulkDelete = async () => {
+    const selectedIds = Object.keys(rowSelection).map(idx => data[Number(idx)]?.id).filter(Boolean)
+    if (selectedIds.length === 0) return
+    if (!window.confirm(`${selectedIds.length}건을 삭제하시겠습니까?`)) return
+    setBulkAction(true)
+    try {
+      for (const id of selectedIds) {
+        await deleteInfluencer(id)
+      }
+      setRowSelection({})
+      toast.success(`${selectedIds.length}건 삭제 완료`)
+      router.refresh()
+    } finally {
+      setBulkAction(false)
+    }
+  }
+
+  // 벌크 탭 이동
+  const handleBulkMoveTab = async (tab: string) => {
+    const selectedIds = Object.keys(rowSelection).map(idx => data[Number(idx)]?.id).filter(Boolean)
+    if (selectedIds.length === 0) return
+    setBulkAction(true)
+    try {
+      for (const id of selectedIds) {
+        await updateInfluencerField(id, 'tab_category', tab as TabCategory)
+      }
+      setRowSelection({})
+      toast.success('탭 이동 완료')
+      router.refresh()
+    } finally {
+      setBulkAction(false)
+    }
+  }
+
+  const selectedCount = Object.keys(rowSelection).length
+  const activeTab = searchParams.get('tab') ?? 'all'
+
+  // 체크박스 컬럼을 맨 앞에 추가
+  const columnsWithSelect = useMemo(() => [
+    {
+      id: 'select',
+      size: 28,
+      enableResizing: false,
+      enableSorting: false,
+      header: ({ table: t }: { table: ReturnType<typeof useReactTable<Influencer>> }) => (
+        <input type="checkbox" checked={t.getIsAllRowsSelected()} onChange={t.getToggleAllRowsSelectedHandler()} className="h-3 w-3 accent-zinc-700 cursor-pointer" />
+      ),
+      cell: ({ row }: { row: { getIsSelected: () => boolean; getToggleSelectedHandler: () => (e: unknown) => void } }) => (
+        <input type="checkbox" checked={row.getIsSelected()} onChange={row.getToggleSelectedHandler()} className="h-3 w-3 accent-zinc-700 cursor-pointer" />
+      ),
+    },
+    ...allColumns,
+  ], [])
+
+  const table = useReactTable({
+    data,
+    columns: columnsWithSelect,
+    state: { sorting, rowSelection, columnVisibility },
+    onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
+    onColumnVisibilityChange: setColumnVisibility,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    columnResizeMode: 'onChange',
+    enableColumnResizing: true,
+    enableRowSelection: true,
+  })
+
+  return (
+    <div className="rounded-xl border border-border bg-card shadow-sm">
+      {/* 필터 바 */}
+      <div className="border-b border-border bg-secondary/20 px-3 py-2">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap gap-1">
+            {TAB_PRESETS.map((tab) => {
+              const isActive = activeTab === tab.value
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => handleTabChange(tab.value)}
+                  className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors border ${isActive ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-zinc-600 border-zinc-200 hover:border-zinc-300 hover:text-zinc-900'}`}
+                >
+                  {tab.label}
+                  {tabCounts[tab.value] !== undefined && (
+                    <span className={`ml-1 text-[10px] ${isActive ? 'text-primary-foreground/70' : 'text-zinc-400'}`}>
+                      {tabCounts[tab.value]}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-zinc-400" />
+              <input
+                type="text"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="검색..."
+                className="h-7 w-40 rounded border border-zinc-200 bg-background pl-6 pr-2 text-[12px] outline-none transition-colors focus:border-zinc-400"
+              />
+            </div>
+            {/* 컬럼 숨기기 */}
+            <div className="relative">
+              <Button type="button" variant="outline" size="sm" className="h-7 px-1.5" onClick={() => setShowColumnMenu(!showColumnMenu)} title="컬럼 표시/숨기기">
+                <Columns3 className="h-3.5 w-3.5" />
+              </Button>
+              {showColumnMenu && (
+                <div className="absolute right-0 top-8 z-50 w-44 rounded-md border border-zinc-200 bg-white shadow-lg py-1 max-h-64 overflow-auto">
+                  {table.getAllLeafColumns().filter(c => c.id !== 'select').map(col => (
+                    <label key={col.id} className="flex items-center gap-2 px-3 py-1 text-[11px] hover:bg-zinc-50 cursor-pointer">
+                      <input type="checkbox" checked={col.getIsVisible()} onChange={col.getToggleVisibilityHandler()} className="h-3 w-3 accent-zinc-700" />
+                      {typeof col.columnDef.header === 'string' ? col.columnDef.header : col.id}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* CSV 내보내기 */}
+            <Button type="button" variant="outline" size="sm" className="h-7 px-1.5" onClick={() => exportToCsv(data)} title="CSV 내보내기">
+              <Download className="h-3.5 w-3.5" />
+            </Button>
+            <Button type="button" size="sm" className="h-7 px-2 text-[12px]" onClick={() => void handleCreate()} disabled={creating}>
+              <Plus className="mr-0.5 h-3 w-3" />
+              추가
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* 벌크 액션 바 */}
+      {selectedCount > 0 && (
+        <div className="border-b border-border bg-blue-50 px-3 py-1.5 flex items-center gap-2 text-[12px]">
+          <span className="font-medium text-blue-700">{selectedCount}건 선택</span>
+          <Button type="button" variant="outline" size="sm" className="h-6 px-2 text-[11px] text-red-600 border-red-200 hover:bg-red-50" onClick={() => void handleBulkDelete()} disabled={bulkAction}>
+            <Trash2 className="mr-0.5 h-3 w-3" />삭제
+          </Button>
+          <div className="flex items-center gap-1">
+            <FolderInput className="h-3 w-3 text-blue-600" />
+            <select className="h-6 text-[11px] border border-zinc-200 rounded px-1 bg-white" onChange={(e) => { if (e.target.value) void handleBulkMoveTab(e.target.value); e.target.value = '' }} disabled={bulkAction}>
+              <option value="">탭 이동...</option>
+              {TAB_CATEGORIES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+          </div>
+          <button type="button" className="ml-auto text-[11px] text-zinc-500 hover:text-zinc-700" onClick={() => setRowSelection({})}>선택 해제</button>
+        </div>
+      )}
+
+      {/* 테이블 */}
+      <div className="overflow-x-auto">
+        <Table className="min-w-max" style={{ width: table.getCenterTotalSize() }}>
+          <TableHeader className="bg-secondary/40 sticky top-0 z-10">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="border-b border-border hover:bg-transparent">
+                {headerGroup.headers.map((header) => {
+                  const canSort = header.column.getCanSort()
+                  const sorted = header.column.getIsSorted()
+                  return (
+                    <TableHead
+                      key={header.id}
+                      style={{
+                        width: header.getSize(),
+                        position: 'relative',
+                        ...(header.column.id === 'select' || header.column.id === 'no' || header.column.id === 'nickname'
+                          ? { position: 'sticky', left: header.column.id === 'select' ? 0 : header.column.id === 'no' ? 28 : 68, zIndex: 20, background: 'var(--color-secondary)' }
+                          : {}),
+                      }}
+                      className="whitespace-nowrap font-medium text-muted-foreground text-[10px] uppercase tracking-wider h-7 px-2 select-none"
+                      onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                    >
+                      <div className={`flex items-center gap-0.5 ${canSort ? 'cursor-pointer hover:text-foreground' : ''}`}>
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        {canSort && (
+                          sorted === 'asc' ? <ArrowUp className="h-2.5 w-2.5" />
+                          : sorted === 'desc' ? <ArrowDown className="h-2.5 w-2.5" />
+                          : <ArrowUpDown className="h-2.5 w-2.5 opacity-30" />
+                        )}
+                      </div>
+                      {header.column.getCanResize() && (
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          className={`absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none hover:bg-zinc-400 ${header.column.getIsResizing() ? 'bg-zinc-500' : ''}`}
+                        />
+                      )}
+                    </TableHead>
+                  )
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && 'selected'}
+                  className={`transition-colors border-b border-border/50 last:border-0 cursor-default ${row.getIsSelected() ? 'bg-blue-50/50' : 'hover:bg-muted/50'}`}
+                  onDoubleClick={() => setDetailRow(row.original)}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      style={{
+                        width: cell.column.getSize(),
+                        ...(cell.column.id === 'select' || cell.column.id === 'no' || cell.column.id === 'nickname'
+                          ? { position: 'sticky', left: cell.column.id === 'select' ? 0 : cell.column.id === 'no' ? 28 : 68, zIndex: 5, background: 'var(--color-card)' }
+                          : {}),
+                      }}
+                      className="py-1 px-2 text-[12px] text-foreground"
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={columnsWithSelect.length} className="h-48 text-center">
+                  <div className="flex flex-col items-center justify-center text-muted-foreground space-y-3">
+                    <Users className="h-8 w-8 text-muted-foreground/50" />
+                    <p className="text-sm text-muted-foreground">등록된 인플루언서가 없습니다</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* 하단 건수 */}
+      <div className="border-t border-border px-3 py-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
+        <span>총 {data.length}건{selectedCount > 0 && ` · ${selectedCount}건 선택`}</span>
+        <span>더블클릭으로 상세보기 · {table.getVisibleLeafColumns().length}개 컬럼</span>
+      </div>
+
+      {/* 상세보기 패널 */}
+      <DetailPanel influencer={detailRow} open={!!detailRow} onClose={() => setDetailRow(null)} />
+    </div>
+  )
+}

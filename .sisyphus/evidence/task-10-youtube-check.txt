@@ -1,0 +1,15 @@
+=== Task 10: YouTube Crawler Check ===
+Date: 2026-03-16 00:50:51
+
+--- File Existence ---
+-rw-r--r-- 1 LGS_002 197121 10231  3월 16 00:49 src/lib/crawlers/youtube.ts
+
+--- Exported Functions ---
+crawlYouTubeChannel, crawlYouTubeVideo, isYouTubeUrl
+
+--- URL Detection Test ---
+true
+false
+
+--- TypeScript Check ---
+EXIT CODE: 0 (PASS)

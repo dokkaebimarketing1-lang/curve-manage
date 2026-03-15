@@ -1,0 +1,21 @@
+=== Task 6: Influencer CRUD Server Actions ===
+Date: 2026년 03월 16일 월 오전 12:43:07
+
+--- File exists check ---
+-rw-r--r-- 1 LGS_002 197121 4040  3월 16 00:42 src/lib/actions/influencer.ts
+
+--- Exported functions (6 expected) ---
+6
+
+--- Function names ---
+export async function getInfluencers(filters?: InfluencerFilters): Promise<ActionResult<Influencer[]>> {
+export async function getInfluencer(id: string): Promise<ActionResult<Influencer>> {
+export async function createInfluencer(data: Partial<InfluencerInsert>): Promise<ActionResult<Influencer>> {
+export async function updateInfluencer(id: string, data: InfluencerUpdate): Promise<ActionResult<Influencer>> {
+export async function deleteInfluencer(id: string): Promise<ActionResult> {
+export async function updateInfluencerField(
+
+--- TypeScript check ---
+tsc exit code: 0
+
+--- RESULT: PASS ---
