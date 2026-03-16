@@ -53,33 +53,94 @@ function UploadableImageCell({ id, field, src, alt, width, height }: { id: strin
   )
 }
 
-/** 영상 썸네일 — 클릭 시 해당 영상 URL로 이동 */
+/** YouTube URL → embed URL 변환 */
+function toEmbedUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    let videoId: string | null = null
+
+    if (parsed.hostname === 'youtu.be') {
+      videoId = parsed.pathname.split('/').filter(Boolean)[0] ?? null
+    } else if (parsed.hostname.includes('youtube.com')) {
+      videoId = parsed.searchParams.get('v')
+      if (!videoId) {
+        const parts = parsed.pathname.split('/').filter(Boolean)
+        if (parts[0] === 'shorts' && parts[1]) videoId = parts[1]
+      }
+    }
+
+    return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0` : null
+  } catch {
+    return null
+  }
+}
+
+/** 영상 썸네일 — 클릭 시 사이트 내 모달로 영상 재생 */
 function VideoThumbnailCell({ videoUrl, thumbnailSrc, alt }: { videoUrl: string | null; thumbnailSrc: string | null; alt: string }) {
+  const [open, setOpen] = useState(false)
+
   if (!thumbnailSrc) {
     return <div className="w-10 h-7 rounded bg-zinc-100 flex items-center justify-center text-zinc-300 text-[10px]">-</div>
   }
 
+  const embedUrl = videoUrl ? toEmbedUrl(videoUrl) : null
+
   return (
-    <a
-      href={videoUrl || '#'}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block relative group"
-      onClick={(e) => { if (!videoUrl) e.preventDefault() }}
-      title={videoUrl ? '클릭하여 영상 보기' : '영상 URL 없음'}
-    >
-      <img
-        src={thumbnailSrc}
-        alt={alt}
-        referrerPolicy="no-referrer"
-        className="w-10 h-7 rounded object-cover border border-zinc-200 group-hover:border-blue-400 transition-colors"
-      />
-      {videoUrl && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 rounded transition-all">
-          <ExternalLink className="h-3 w-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+    <>
+      <button
+        type="button"
+        onClick={() => { if (embedUrl) setOpen(true) }}
+        className="block relative group cursor-pointer"
+        title={videoUrl ? '클릭하여 영상 보기' : '영상 URL 없음'}
+      >
+        <img
+          src={thumbnailSrc}
+          alt={alt}
+          referrerPolicy="no-referrer"
+          className="w-10 h-7 rounded object-cover border border-zinc-200 group-hover:border-blue-400 transition-colors"
+        />
+        {embedUrl && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 rounded transition-all">
+            <svg aria-hidden="true" className="h-3 w-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor"><title>재생</title><path d="M8 5v14l11-7z" /></svg>
+          </div>
+        )}
+      </button>
+
+      {/* 비디오 모달 */}
+      {open && embedUrl && (
+        <div role="dialog" aria-label="영상 재생" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false) }}>
+          <div role="document" className="relative w-full max-w-3xl mx-4" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="absolute -top-10 right-0 text-white/80 hover:text-white text-sm font-medium flex items-center gap-1"
+            >
+              닫기 ✕
+            </button>
+            <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-2xl bg-black">
+              <iframe
+                src={embedUrl}
+                className="absolute inset-0 w-full h-full"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                title={alt}
+              />
+            </div>
+            {videoUrl && (
+              <a
+                href={videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1 text-xs text-white/60 hover:text-white/90 transition-colors"
+              >
+                <ExternalLink className="h-3 w-3" />
+                YouTube에서 보기
+              </a>
+            )}
+          </div>
         </div>
       )}
-    </a>
+    </>
   )
 }
 
