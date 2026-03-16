@@ -19,9 +19,7 @@ export default async function InfluencersPage({
 
   return (
     <MainLayout title="인플루언서 관리">
-      <div className="flex flex-col gap-4">
-        <InfluencerTable initialData={influencers} tabCounts={tabCounts} />
-      </div>
+      <InfluencerTable initialData={influencers} tabCounts={tabCounts} />
     </MainLayout>
   )
 }

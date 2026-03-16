@@ -188,9 +188,9 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
   })
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm">
-      {/* 필터 바 */}
-      <div className="border-b border-border bg-secondary/20 px-3 py-2">
+    <div className="flex flex-col rounded-xl border border-border bg-card shadow-sm h-[calc(100vh-6rem)]">
+      {/* 필터 바 — 고정 */}
+      <div className="shrink-0 border-b border-border bg-secondary/20 px-3 py-2">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap gap-1">
             {TAB_PRESETS.map((tab) => {
@@ -252,9 +252,9 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
         </div>
       </div>
 
-      {/* 벌크 액션 바 */}
+      {/* 벌크 액션 바 — 고정 */}
       {selectedCount > 0 && (
-        <div className="border-b border-border bg-blue-50 px-3 py-1.5 flex items-center gap-2 text-[12px]">
+        <div className="shrink-0 border-b border-border bg-blue-50 px-3 py-1.5 flex items-center gap-2 text-[12px]">
           <span className="font-medium text-blue-700">{selectedCount}건 선택</span>
           <Button type="button" variant="outline" size="sm" className="h-6 px-2 text-[11px] text-red-600 border-red-200 hover:bg-red-50" onClick={() => void handleBulkDelete()} disabled={bulkAction}>
             <Trash2 className="mr-0.5 h-3 w-3" />삭제
@@ -270,10 +270,10 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
         </div>
       )}
 
-      {/* 테이블 */}
-      <div className="overflow-x-auto">
+      {/* 테이블 — 스크롤 영역 (가로+세로) */}
+      <div className="flex-1 overflow-auto min-h-0">
         <Table className="min-w-max" style={{ width: table.getCenterTotalSize() }}>
-          <TableHeader className="bg-secondary/40 sticky top-0 z-10">
+          <TableHeader className="bg-card sticky top-0 z-10 shadow-[0_1px_0_0_var(--color-border)]">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="border-b border-border hover:bg-transparent">
                 {headerGroup.headers.map((header) => {
@@ -352,8 +352,8 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
         </Table>
       </div>
 
-      {/* 하단 건수 */}
-      <div className="border-t border-border px-3 py-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
+      {/* 하단 건수 — 고정 */}
+      <div className="shrink-0 border-t border-border px-3 py-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
         <span>총 {data.length}건{selectedCount > 0 && ` · ${selectedCount}건 선택`}</span>
         <span>더블클릭으로 상세보기 · {table.getVisibleLeafColumns().length}개 컬럼</span>
       </div>
