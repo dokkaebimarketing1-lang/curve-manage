@@ -279,15 +279,15 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
                 {headerGroup.headers.map((header) => {
                   const canSort = header.column.getCanSort()
                   const sorted = header.column.getIsSorted()
+                  const stickyLeft: Record<string, number> = { select: 0, no: 28, nickname: 68, profile_image_url: 158 }
+                  const isSticky = header.column.id in stickyLeft
                   return (
                     <TableHead
                       key={header.id}
                       style={{
                         width: header.getSize(),
-                        position: 'relative',
-                        ...(header.column.id === 'select' || header.column.id === 'no' || header.column.id === 'nickname'
-                          ? { position: 'sticky', left: header.column.id === 'select' ? 0 : header.column.id === 'no' ? 28 : 68, zIndex: 20, background: 'var(--color-secondary)' }
-                          : {}),
+                        position: isSticky ? 'sticky' : 'relative',
+                        ...(isSticky ? { left: stickyLeft[header.column.id], zIndex: 20, background: 'var(--color-card)' } : {}),
                       }}
                       className="whitespace-nowrap text-zinc-500 text-xs uppercase tracking-wider font-semibold h-7 px-2 select-none"
                       onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
@@ -322,20 +322,22 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
                   className={`transition-colors border-b border-border/50 last:border-0 cursor-default ${row.getIsSelected() ? 'bg-blue-50/50' : 'hover:bg-zinc-50/50'}`}
                   onDoubleClick={() => setDetailRow(row.original)}
                 >
-                  {row.getVisibleCells().map((cell) => (
+                  {row.getVisibleCells().map((cell) => {
+                    const stickyLeft: Record<string, number> = { select: 0, no: 28, nickname: 68, profile_image_url: 158 }
+                    const isSticky = cell.column.id in stickyLeft
+                    return (
                     <TableCell
                       key={cell.id}
                       style={{
                         width: cell.column.getSize(),
-                        ...(cell.column.id === 'select' || cell.column.id === 'no' || cell.column.id === 'nickname'
-                          ? { position: 'sticky', left: cell.column.id === 'select' ? 0 : cell.column.id === 'no' ? 28 : 68, zIndex: 5, background: 'var(--color-card)' }
-                          : {}),
+                        ...(isSticky ? { position: 'sticky', left: stickyLeft[cell.column.id], zIndex: 5, background: 'var(--color-card)' } : {}),
                       }}
                       className="py-1 px-2 text-[12px] text-foreground"
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
-                  ))}
+                    )
+                  })}
                 </TableRow>
               ))
             ) : (

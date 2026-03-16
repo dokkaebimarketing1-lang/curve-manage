@@ -53,6 +53,36 @@ function UploadableImageCell({ id, field, src, alt, width, height }: { id: strin
   )
 }
 
+/** 영상 썸네일 — 클릭 시 해당 영상 URL로 이동 */
+function VideoThumbnailCell({ videoUrl, thumbnailSrc, alt }: { videoUrl: string | null; thumbnailSrc: string | null; alt: string }) {
+  if (!thumbnailSrc) {
+    return <div className="w-10 h-7 rounded bg-zinc-100 flex items-center justify-center text-zinc-300 text-[10px]">-</div>
+  }
+
+  return (
+    <a
+      href={videoUrl || '#'}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block relative group"
+      onClick={(e) => { if (!videoUrl) e.preventDefault() }}
+      title={videoUrl ? '클릭하여 영상 보기' : '영상 URL 없음'}
+    >
+      <img
+        src={thumbnailSrc}
+        alt={alt}
+        referrerPolicy="no-referrer"
+        className="w-10 h-7 rounded object-cover border border-zinc-200 group-hover:border-blue-400 transition-colors"
+      />
+      {videoUrl && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 rounded transition-all">
+          <ExternalLink className="h-3 w-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+      )}
+    </a>
+  )
+}
+
 function EditableTextCell({
   id,
   field,
@@ -382,37 +412,27 @@ export const columns: ColumnDef<Influencer>[] = [
   },
   {
     accessorKey: 'high_view_video_thumbnail',
-    header: '조회수 높은 영상',
+    header: '인기 영상',
     size: 52,
-    cell: ({ row }) => {
-      return (
-        <UploadableImageCell
-          id={row.original.id}
-          field="high_view_video_thumbnail"
-          src={row.getValue('high_view_video_thumbnail')}
-          alt="인기 영상"
-          width={40}
-          height={28}
-        />
-      )
-    },
+    cell: ({ row }) => (
+      <VideoThumbnailCell
+        videoUrl={row.original.high_view_video_url}
+        thumbnailSrc={row.getValue('high_view_video_thumbnail')}
+        alt="인기 영상"
+      />
+    ),
   },
   {
     accessorKey: 'low_view_video_thumbnail',
-    header: '조회수 낮은 영상',
+    header: '비인기 영상',
     size: 52,
-    cell: ({ row }) => {
-      return (
-        <UploadableImageCell
-          id={row.original.id}
-          field="low_view_video_thumbnail"
-          src={row.getValue('low_view_video_thumbnail')}
-          alt="비인기 영상"
-          width={40}
-          height={28}
-        />
-      )
-    },
+    cell: ({ row }) => (
+      <VideoThumbnailCell
+        videoUrl={row.original.low_view_video_url}
+        thumbnailSrc={row.getValue('low_view_video_thumbnail')}
+        alt="비인기 영상"
+      />
+    ),
   },
   {
     accessorKey: 'url',
