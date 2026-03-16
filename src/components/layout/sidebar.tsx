@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Users, LayoutGrid, Upload } from 'lucide-react';
+import { Users, LayoutGrid, Megaphone, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -15,6 +15,11 @@ const navItems = [
     title: '광고 보드',
     href: '/ads',
     icon: LayoutGrid,
+  },
+  {
+    title: '광고 레퍼런스',
+    href: '/ad-references',
+    icon: Megaphone,
   },
   {
     title: 'CSV 임포트',

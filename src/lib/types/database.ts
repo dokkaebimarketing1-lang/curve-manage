@@ -81,6 +81,32 @@ export interface AdCardInsert extends Omit<AdCard, 'id' | 'created_at' | 'update
 export interface AdCardUpdate extends Partial<AdCardInsert> {}
 
 // ──────────────────────────────────────────
+// AdReference
+// ──────────────────────────────────────────
+export interface AdReference {
+  id: string
+  no: number
+  created_date: string | null
+  format: string | null
+  reference_brand: string | null
+  thumbnail_url: string | null
+  ad_id: string | null
+  page_name: string | null
+  ad_type: string | null
+  content: string | null
+  ad_url: string | null
+  video_url: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AdReferenceInsert
+  extends Omit<AdReference, 'id' | 'no' | 'created_at' | 'updated_at'> {}
+
+export interface AdReferenceUpdate extends Partial<AdReferenceInsert> {}
+
+// ──────────────────────────────────────────
 // Action Result Wrapper
 // ──────────────────────────────────────────
 export interface ActionResult<T = undefined> {

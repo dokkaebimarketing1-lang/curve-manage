@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
 import { Influencer, InfluencerUpdate } from '@/lib/types/database'
 import { ImageCell } from '@/components/ui/image-cell'
@@ -8,7 +8,16 @@ import { ExternalLink, Check, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { crawlAndUpdateInfluencer, deleteInfluencer, updateInfluencerField } from '@/lib/actions/influencer'
 import { uploadInfluencerImage } from '@/lib/actions/upload'
-import { CLASSIFICATION_OPTIONS, COLLABORATION_TYPES, CATEGORIES, GENDER_OPTIONS } from '@/lib/design/constants'
+import { 
+  CLASSIFICATION_OPTIONS, 
+  COLLABORATION_TYPES, 
+  CATEGORIES, 
+  GENDER_OPTIONS,
+  CLASSIFICATION_COLORS,
+  COLLABORATION_COLORS,
+  CATEGORY_COLORS,
+  GENDER_COLORS
+} from '@/lib/design/constants'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -32,7 +41,16 @@ function UploadableImageCell({ id, field, src, alt, width, height }: { id: strin
     router.refresh()
   }
 
-  return <ImageCell src={src} alt={alt} width={width} height={height} onUpload={handleUpload} />
+  const isAutoFilled = src?.startsWith('http')
+
+  return (
+    <div className="relative inline-block">
+      <ImageCell src={src} alt={alt} width={width} height={height} onUpload={handleUpload} />
+      {isAutoFilled && (
+        <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-green-400 border border-white shadow-sm" title="자동 크롤링됨" />
+      )}
+    </div>
+  )
 }
 
 function EditableTextCell({
@@ -114,6 +132,80 @@ function EditableNumberCell({
       placeholder={placeholder || '-'}
       className="w-full bg-transparent text-sm text-right outline-none border-b border-transparent focus:border-zinc-300 transition-colors py-0.5 placeholder:text-zinc-300"
     />
+  )
+}
+
+function ColorBadgeSelectCell({
+  id,
+  field,
+  value,
+  options,
+  colorMap,
+}: {
+  id: string
+  field: InfluencerField
+  value: string | null
+  options: readonly { value: string; label: string }[]
+  colorMap: Record<string, { bg: string; text: string }>
+}) {
+  const [selected, setSelected] = useState(value || '')
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const handleSelect = async (val: string) => {
+    setSelected(val)
+    setOpen(false)
+    await saveField(id, field, val || null)
+  }
+
+  const colors = colorMap[selected] || { bg: 'bg-zinc-100', text: 'text-zinc-400' }
+  const label = options.find(o => o.value === selected)?.label || '-'
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-all ${selected ? colors.bg + ' ' + colors.text : 'bg-zinc-50 text-zinc-300 border border-dashed border-zinc-200'} hover:opacity-80 cursor-pointer`}
+      >
+        {selected ? label : '선택'}
+        <svg aria-hidden="true" className="h-3 w-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full left-0 mt-1 p-1.5 bg-white rounded-lg shadow-lg border border-zinc-200 min-w-[140px] animate-in fade-in-0 zoom-in-95 duration-100">
+          <button
+            type="button"
+            onClick={() => handleSelect('')}
+            className="w-full text-left px-2.5 py-1 text-xs text-zinc-400 hover:bg-zinc-50 rounded"
+          >
+            선택 해제
+          </button>
+          {options.map((option) => {
+            const c = colorMap[option.value] || { bg: 'bg-zinc-100', text: 'text-zinc-600' }
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleSelect(option.value)}
+                className={`w-full text-left px-2.5 py-1.5 text-xs font-medium rounded my-0.5 transition-all ${c.bg} ${c.text} ${selected === option.value ? 'ring-2 ring-offset-1 ring-zinc-300' : 'hover:opacity-80'}`}
+              >
+                {option.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -290,7 +382,7 @@ export const columns: ColumnDef<Influencer>[] = [
   },
   {
     accessorKey: 'high_view_video_thumbnail',
-    header: '인기',
+    header: '조회수 높은 영상',
     size: 52,
     cell: ({ row }) => {
       return (
@@ -307,7 +399,7 @@ export const columns: ColumnDef<Influencer>[] = [
   },
   {
     accessorKey: 'low_view_video_thumbnail',
-    header: '비인기',
+    header: '조회수 낮은 영상',
     size: 52,
     cell: ({ row }) => {
       return (
@@ -336,26 +428,28 @@ export const columns: ColumnDef<Influencer>[] = [
     size: 70,
     cell: ({ row }) => {
       return (
-        <EditableSelectCell
+        <ColorBadgeSelectCell
           id={row.original.id}
           field="classification"
           value={row.getValue('classification')}
           options={CLASSIFICATION_OPTIONS}
+          colorMap={CLASSIFICATION_COLORS}
         />
       )
     },
   },
   {
     accessorKey: 'collaboration_type',
-    header: '협업형태',
+    header: '협업 형태',
     size: 70,
     cell: ({ row }) => {
       return (
-        <EditableSelectCell
+        <ColorBadgeSelectCell
           id={row.original.id}
           field="collaboration_type"
           value={row.getValue('collaboration_type')}
           options={COLLABORATION_TYPES}
+          colorMap={COLLABORATION_COLORS}
         />
       )
     },
@@ -366,26 +460,30 @@ export const columns: ColumnDef<Influencer>[] = [
     size: 80,
     cell: ({ row }) => {
       return (
-        <EditableSelectCell
+        <ColorBadgeSelectCell
           id={row.original.id}
           field="category"
           value={row.getValue('category')}
           options={CATEGORIES}
+          colorMap={CATEGORY_COLORS}
         />
       )
     },
   },
   {
     accessorKey: 'follower_count',
-    header: '팔로워수',
+    header: '팔로워/구독자수',
     size: 70,
     cell: ({ row }) => {
+      const isAutoFilled = row.original.url && row.getValue('follower_count') !== null
       return (
-        <EditableNumberCell
-          id={row.original.id}
-          field="follower_count"
-          value={row.getValue('follower_count')}
-        />
+        <div className={`relative ${isAutoFilled ? 'pl-1.5 border-l-2 border-green-300' : ''}`} title={isAutoFilled ? '자동 크롤링됨' : undefined}>
+          <EditableNumberCell
+            id={row.original.id}
+            field="follower_count"
+            value={row.getValue('follower_count')}
+          />
+        </div>
       )
     },
   },
@@ -410,11 +508,12 @@ export const columns: ColumnDef<Influencer>[] = [
     size: 50,
     cell: ({ row }) => {
       return (
-        <EditableSelectCell
+        <ColorBadgeSelectCell
           id={row.original.id}
           field="gender"
           value={row.getValue('gender')}
           options={GENDER_OPTIONS}
+          colorMap={GENDER_COLORS}
         />
       )
     },
@@ -444,7 +543,7 @@ export const columns: ColumnDef<Influencer>[] = [
   },
   {
     accessorKey: 'selection_reason',
-    header: '선정이유',
+    header: '선정 이유 (코멘트)',
     size: 120,
     cell: ({ row }) => {
       return (

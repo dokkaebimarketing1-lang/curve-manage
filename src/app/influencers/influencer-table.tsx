@@ -289,7 +289,7 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
                           ? { position: 'sticky', left: header.column.id === 'select' ? 0 : header.column.id === 'no' ? 28 : 68, zIndex: 20, background: 'var(--color-secondary)' }
                           : {}),
                       }}
-                      className="whitespace-nowrap font-medium text-muted-foreground text-[10px] uppercase tracking-wider h-7 px-2 select-none"
+                      className="whitespace-nowrap text-zinc-500 text-xs uppercase tracking-wider font-semibold h-7 px-2 select-none"
                       onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                     >
                       <div className={`flex items-center gap-0.5 ${canSort ? 'cursor-pointer hover:text-foreground' : ''}`}>
@@ -319,7 +319,7 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className={`transition-colors border-b border-border/50 last:border-0 cursor-default ${row.getIsSelected() ? 'bg-blue-50/50' : 'hover:bg-muted/50'}`}
+                  className={`transition-colors border-b border-border/50 last:border-0 cursor-default ${row.getIsSelected() ? 'bg-blue-50/50' : 'hover:bg-zinc-50/50'}`}
                   onDoubleClick={() => setDetailRow(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
