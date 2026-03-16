@@ -40,6 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 dev.log
-.env.local
 
-.vercel
+# agents
+AGENTS.md
+**/AGENTS.md
+
+# misc
+nul
