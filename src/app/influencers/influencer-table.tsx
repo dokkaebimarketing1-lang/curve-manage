@@ -273,21 +273,25 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
       {/* 테이블 — 스크롤 영역 (가로+세로) */}
       <div className="flex-1 overflow-auto min-h-0">
         <Table className="min-w-max" style={{ width: table.getCenterTotalSize() }}>
-          <TableHeader className="bg-card sticky top-0 z-10 shadow-[0_1px_0_0_var(--color-border)]">
+          <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="border-b border-border hover:bg-transparent">
                 {headerGroup.headers.map((header) => {
                   const canSort = header.column.getCanSort()
                   const sorted = header.column.getIsSorted()
                   const stickyLeft: Record<string, number> = { select: 0, no: 28, nickname: 68, profile_image_url: 158 }
-                  const isSticky = header.column.id in stickyLeft
+                  const isStickyX = header.column.id in stickyLeft
                   return (
                     <TableHead
                       key={header.id}
                       style={{
                         width: header.getSize(),
-                        position: isSticky ? 'sticky' : 'relative',
-                        ...(isSticky ? { left: stickyLeft[header.column.id], zIndex: 20, background: 'var(--color-card)' } : {}),
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: isStickyX ? 30 : 10,
+                        background: 'var(--color-card)',
+                        boxShadow: '0 1px 0 0 var(--color-border)',
+                        ...(isStickyX ? { left: stickyLeft[header.column.id] } : {}),
                       }}
                       className="whitespace-nowrap text-zinc-500 text-xs uppercase tracking-wider font-semibold h-7 px-2 select-none"
                       onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
