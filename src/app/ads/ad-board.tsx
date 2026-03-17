@@ -9,7 +9,7 @@ import {
   createFolder,
   deleteAdCard,
   deleteFolder,
-} from '@/lib/actions/ad-card'
+} from '@/lib/actions/ads'
 import { AdCard, Folder } from '@/lib/types/database'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

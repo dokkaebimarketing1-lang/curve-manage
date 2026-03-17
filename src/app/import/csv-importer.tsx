@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { bulkCreateInfluencers } from '@/lib/actions/import'
+import { TAB_CATEGORIES } from '@/lib/design/constants'
 import { TabCategory } from '@/lib/types/database'
 
 type DbField =
@@ -107,16 +108,6 @@ const HEADER_MATCHES: Record<string, DbField> = {
   금액: 'rate',
   rate: 'rate',
 }
-
-const TAB_CATEGORIES: { value: TabCategory; label: string }[] = [
-  { value: 'listup', label: 'listup' },
-  { value: 'reference', label: 'reference' },
-  { value: 'mcn', label: 'mcn' },
-  { value: 'must', label: 'must' },
-  { value: 'past', label: 'past' },
-  { value: 'group_buy_brand', label: 'group_buy_brand' },
-  { value: 'ad', label: 'ad' },
-]
 
 function normalizeHeader(value: string): string {
   return value.trim().toLowerCase().replace(/[\s_-]/g, '')
@@ -230,6 +221,45 @@ export function CsvImporter() {
 
   const previewRows = useMemo(() => rows.slice(0, 5), [rows])
 
+  const headerColumns = useMemo(() => {
+    const seen = new Map<string, number>()
+    return headers.map((header, columnIndex) => {
+      const normalized = (header || 'empty-column').trim().toLowerCase().replace(/\s+/g, '-')
+      const count = (seen.get(normalized) ?? 0) + 1
+      seen.set(normalized, count)
+      return {
+        columnIndex,
+        header,
+        key: `${normalized}-${count}`,
+      }
+    })
+  }, [headers])
+
+  const previewTableRows = useMemo(() => {
+    const seen = new Map<string, number>()
+    return previewRows.map((row) => {
+      const signature = row.join('|') || 'empty-row'
+      const count = (seen.get(signature) ?? 0) + 1
+      seen.set(signature, count)
+      return {
+        row,
+        key: `${signature}-${count}`,
+      }
+    })
+  }, [previewRows])
+
+  const topErrors = useMemo(() => {
+    const seen = new Map<string, number>()
+    return errors.slice(0, 5).map((message) => {
+      const count = (seen.get(message) ?? 0) + 1
+      seen.set(message, count)
+      return {
+        message,
+        key: `${message}-${count}`,
+      }
+    })
+  }, [errors])
+
   const mappedColumnsCount = useMemo(() => {
     return Object.values(mapping).filter(Boolean).length
   }, [mapping])
@@ -275,7 +305,7 @@ export function CsvImporter() {
     }
   }
 
-  const onDrop: React.DragEventHandler<HTMLDivElement> = async (event) => {
+  const onDrop: React.DragEventHandler<HTMLButtonElement> = async (event) => {
     event.preventDefault()
     setIsDragging(false)
 
@@ -407,8 +437,15 @@ export function CsvImporter() {
             className="hidden"
             onChange={onInputChange}
           />
-          <div
+          <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                fileInputRef.current?.click()
+              }
+            }}
             onDragOver={(event) => {
               event.preventDefault()
               setIsDragging(true)
@@ -431,7 +468,7 @@ export function CsvImporter() {
                 </div>
               ) : null}
             </div>
-          </div>
+          </button>
         </CardContent>
       </Card>
 
@@ -442,14 +479,14 @@ export function CsvImporter() {
             <CardDescription>CSV 컬럼을 DB 필드에 연결해 주세요.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
-            {headers.map((header, index) => (
-              <div key={`${header}-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_280px] md:items-center">
+            {headerColumns.map((column) => (
+              <div key={column.key} className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_280px] md:items-center">
                 <div className="rounded-md border px-3 py-2 text-sm">
-                  <span className="text-zinc-500">CSV 컬럼:</span> {header || `컬럼 ${index + 1}`}
+                  <span className="text-zinc-500">CSV 컬럼:</span> {column.header || `컬럼 ${column.columnIndex + 1}`}
                 </div>
                 <Select
-                  value={mapping[index] || '__skip__'}
-                  onValueChange={(value) => updateMapping(index, value)}
+                  value={mapping[column.columnIndex] || '__skip__'}
+                  onValueChange={(value) => updateMapping(column.columnIndex, value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="DB 필드를 선택하세요" />
@@ -479,17 +516,17 @@ export function CsvImporter() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {headers.map((header, index) => (
-                    <TableHead key={`${header}-${index}`}>{header || `컬럼 ${index + 1}`}</TableHead>
+                  {headerColumns.map((column) => (
+                    <TableHead key={column.key}>{column.header || `컬럼 ${column.columnIndex + 1}`}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {previewRows.map((row, rowIndex) => (
-                  <TableRow key={`preview-${rowIndex}`}>
-                    {headers.map((_, colIndex) => (
-                      <TableCell key={`preview-${rowIndex}-${colIndex}`} className="max-w-[220px] truncate">
-                        {row[colIndex] || '-'}
+                {previewTableRows.map((previewItem) => (
+                  <TableRow key={previewItem.key}>
+                    {headerColumns.map((column) => (
+                      <TableCell key={`${previewItem.key}-${column.key}`} className="max-w-[220px] truncate">
+                        {previewItem.row[column.columnIndex] || '-'}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -507,9 +544,9 @@ export function CsvImporter() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="grid gap-2 md:max-w-xs">
-            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-200">탭 카테고리</label>
+            <label htmlFor="tab-category" className="text-sm font-medium text-zinc-700 dark:text-zinc-200">탭 카테고리</label>
             <Select value={tabCategory} onValueChange={(value) => setTabCategory(value as TabCategory)}>
-              <SelectTrigger>
+              <SelectTrigger id="tab-category">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -550,8 +587,8 @@ export function CsvImporter() {
             <div className="rounded-md border border-red-200 bg-red-50/70 p-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
               <p className="mb-2 font-medium">오류 내역</p>
               <ul className="list-disc space-y-1 pl-5">
-                {errors.slice(0, 5).map((error, index) => (
-                  <li key={`error-${index}`}>{error}</li>
+                {topErrors.map((errorItem) => (
+                  <li key={errorItem.key}>{errorItem.message}</li>
                 ))}
               </ul>
               {errors.length > 5 ? <p className="mt-2">외 {errors.length - 5}건</p> : null}

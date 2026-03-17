@@ -21,7 +21,7 @@ export async function uploadImage(
       })
     if (error) throw error
 
-    const url = getPublicUrl(path)
+    const url = await getPublicUrl(path)
     return { success: true, url }
   } catch (error) {
     return { success: false, error: String(error) }
@@ -81,7 +81,7 @@ export async function deleteImage(
   }
 }
 
-export function getPublicUrl(path: string): string {
+export async function getPublicUrl(path: string): Promise<string> {
   const supabase = createAdminClient()
   const { data } = supabase.storage
     .from(BUCKET_NAME)

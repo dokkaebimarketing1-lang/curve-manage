@@ -1,5 +1,5 @@
 import { MainLayout } from '@/components/layout/main-layout'
-import { getAdCards, getFolders } from '@/lib/actions/ad-card'
+import { getAdCards, getFolders } from '@/lib/actions/ads'
 
 import { AdBoard } from './ad-board'
 
