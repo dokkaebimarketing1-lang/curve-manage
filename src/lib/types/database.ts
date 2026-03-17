@@ -2,14 +2,8 @@
 // 광고/인플루언서 웹 관리 도구 — 데이터베이스 타입 정의
 // ============================================================
 
-export type TabCategory =
-  | 'reference'        // 참고
-  | 'listup'           // 리스트업 (기본값)
-  | 'mcn'              // MCN회사
-  | 'must'             // 무조건
-  | 'past'             // 과거
-  | 'group_buy_brand'  // 공구 하는 브랜드
-  | 'ad'               // 광고
+// DB 컬럼이 TEXT 이므로 사용자 정의 탭도 허용
+export type TabCategory = string
 
 // ──────────────────────────────────────────
 // Influencer

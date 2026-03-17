@@ -11,7 +11,7 @@ import {
   VisibilityState,
 } from '@tanstack/react-table'
 import { columns as allColumns } from './columns'
-import { Influencer, TabCategory } from '@/lib/types/database'
+import { Influencer } from '@/lib/types/database'
 import { createInfluencer, deleteInfluencer, updateInfluencerField } from '@/lib/actions/influencer'
 import { TAB_PRESETS } from '@/lib/filters/influencer-filters'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -23,15 +23,25 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Users, Search, Plus, Download, Columns3, Trash2, FolderInput, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Users, Search, Plus, Download, Columns3, Trash2, FolderInput, ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { TAB_CATEGORIES } from '@/lib/design/constants'
 import { DetailPanel } from './detail-panel'
 
 interface InfluencerTableProps {
   initialData: Influencer[]
   tabCounts?: Record<string, number>
+}
+
+const CUSTOM_TABS_STORAGE_KEY = 'influencer-custom-tabs'
+const BASE_TABS = TAB_PRESETS.map((tab) => ({ value: tab.value, label: tab.label }))
+
+function toTabValue(label: string): string {
+  return label
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_\-가-힣]/g, '')
 }
 
 // CSV 내보내기
@@ -69,6 +79,31 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [bulkAction, setBulkAction] = useState(false)
   const [detailRow, setDetailRow] = useState<Influencer | null>(null)
+  const [customTabs, setCustomTabs] = useState<{ value: string; label: string }[]>([])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(CUSTOM_TABS_STORAGE_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as Array<{ value: string; label: string }>
+      if (!Array.isArray(parsed)) return
+      const safeTabs = parsed.filter((t) => t && typeof t.value === 'string' && typeof t.label === 'string' && t.value && t.label)
+      setCustomTabs(safeTabs)
+    } catch {
+      // ignore invalid localStorage payload
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem(CUSTOM_TABS_STORAGE_KEY, JSON.stringify(customTabs))
+  }, [customTabs])
+
+  const tabs = useMemo(() => {
+    const existing = new Set(BASE_TABS.map((t) => t.value))
+    const extra = customTabs.filter((t) => !existing.has(t.value))
+    return [...BASE_TABS, ...extra]
+  }, [customTabs])
+  const customTabValues = useMemo(() => new Set(customTabs.map((tab) => tab.value)), [customTabs])
 
   useEffect(() => {
     setSearchText(searchParams.get('search') ?? '')
@@ -143,7 +178,7 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
     setBulkAction(true)
     try {
       for (const id of selectedIds) {
-        await updateInfluencerField(id, 'tab_category', tab as TabCategory)
+        await updateInfluencerField(id, 'tab_category', tab)
       }
       setRowSelection({})
       toast.success('탭 이동 완료')
@@ -155,6 +190,34 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
 
   const selectedCount = Object.keys(rowSelection).length
   const activeTab = searchParams.get('tab') ?? 'all'
+
+  const addCustomTab = useCallback(() => {
+    const labelInput = window.prompt('추가할 탭 이름을 입력하세요')
+    if (!labelInput) return
+
+    const label = labelInput.trim()
+    if (!label) return
+
+    const existingValues = new Set(tabs.map((t) => t.value))
+    const base = toTabValue(label) || `tab_${Date.now()}`
+    let value = base
+    let i = 2
+    while (existingValues.has(value)) {
+      value = `${base}_${i}`
+      i += 1
+    }
+
+    const next = { value, label }
+    setCustomTabs((prev) => [...prev, next])
+    handleTabChange(value)
+  }, [handleTabChange, tabs])
+
+  const removeCustomTab = useCallback((value: string) => {
+    setCustomTabs((prev) => prev.filter((tab) => tab.value !== value))
+    if (activeTab === value) {
+      handleTabChange('all')
+    }
+  }, [activeTab, handleTabChange])
 
   // 체크박스 컬럼을 맨 앞에 추가
   const columnsWithSelect = useMemo(() => [
@@ -192,25 +255,45 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
       {/* 필터 바 — 고정 */}
       <div className="shrink-0 border-b border-border bg-secondary/20 px-3 py-2">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap gap-1">
-            {TAB_PRESETS.map((tab) => {
+          <div className="flex flex-wrap items-center gap-1">
+            {tabs.map((tab) => {
               const isActive = activeTab === tab.value
+              const isCustom = customTabValues.has(tab.value)
               return (
-                <button
-                  key={tab.value}
-                  type="button"
-                  onClick={() => handleTabChange(tab.value)}
-                  className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors border ${isActive ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-zinc-600 border-zinc-200 hover:border-zinc-300 hover:text-zinc-900'}`}
-                >
-                  {tab.label}
-                  {tabCounts[tab.value] !== undefined && (
-                    <span className={`ml-1 text-[10px] ${isActive ? 'text-primary-foreground/70' : 'text-zinc-400'}`}>
-                      {tabCounts[tab.value]}
-                    </span>
+                <div key={tab.value} className="inline-flex items-center gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange(tab.value)}
+                    className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors border ${isActive ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-zinc-600 border-zinc-200 hover:border-zinc-300 hover:text-zinc-900'}`}
+                  >
+                    {tab.label}
+                    {tabCounts[tab.value] !== undefined && (
+                      <span className={`ml-1 text-[10px] ${isActive ? 'text-primary-foreground/70' : 'text-zinc-400'}`}>
+                        {tabCounts[tab.value]}
+                      </span>
+                    )}
+                  </button>
+                  {isCustom && (
+                    <button
+                      type="button"
+                      onClick={() => removeCustomTab(tab.value)}
+                      className="rounded border border-zinc-200 bg-background p-0.5 text-zinc-400 hover:text-red-500 hover:border-red-200"
+                      title="사용자 탭 삭제"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
                   )}
-                </button>
+                </div>
               )
             })}
+            <button
+              type="button"
+              onClick={addCustomTab}
+              className="rounded border border-dashed border-zinc-300 bg-background px-2 py-0.5 text-[11px] font-medium text-zinc-500 hover:border-zinc-400 hover:text-zinc-700"
+              title="탭 추가"
+            >
+              + 탭 추가
+            </button>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -263,7 +346,7 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
             <FolderInput className="h-3 w-3 text-blue-600" />
             <select className="h-6 text-[11px] border border-zinc-200 rounded px-1 bg-white" onChange={(e) => { if (e.target.value) void handleBulkMoveTab(e.target.value); e.target.value = '' }} disabled={bulkAction}>
               <option value="">탭 이동...</option>
-              {TAB_CATEGORIES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              {tabs.filter((t) => t.value !== 'all').map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>
           <button type="button" className="ml-auto text-[11px] text-zinc-500 hover:text-zinc-700" onClick={() => setRowSelection({})}>선택 해제</button>

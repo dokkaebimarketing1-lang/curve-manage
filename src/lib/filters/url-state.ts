@@ -1,10 +1,6 @@
 import { InfluencerFilters } from './influencer-filters'
 import { TabCategory } from '@/lib/types/database'
 
-const VALID_TAB_CATEGORIES = new Set<string>([
-  'reference', 'listup', 'mcn', 'must', 'past', 'group_buy_brand', 'ad'
-])
-
 export function filtersToSearchParams(filters: InfluencerFilters): URLSearchParams {
   const params = new URLSearchParams()
   if (filters.tab_category) params.set('tab', filters.tab_category)
@@ -28,7 +24,7 @@ export function searchParamsToFilters(
   const filters: InfluencerFilters = {}
 
   const tab = getValue('tab')
-  if (tab && VALID_TAB_CATEGORIES.has(tab)) {
+  if (tab && tab.trim()) {
     filters.tab_category = tab as TabCategory
   }
 
