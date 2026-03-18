@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Users, LayoutGrid, Megaphone, Upload, ChevronsLeft, ChevronsRight } from 'lucide-react';
@@ -17,14 +17,10 @@ const STORAGE_KEY = 'sidebar-collapsed';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(true);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'false') setCollapsed(false);
-    setMounted(true);
-  }, []);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem(STORAGE_KEY) !== 'false';
+  });
 
   const toggle = () => {
     const next = !collapsed;
@@ -38,7 +34,6 @@ export function Sidebar() {
         'flex h-full flex-col border-r border-border bg-white z-10 transition-all duration-200 ease-in-out shrink-0',
         collapsed ? 'w-[72px]' : 'w-[200px]'
       )}
-      style={{ opacity: mounted ? 1 : 0 }}
     >
       {/* 로고 */}
       <div className={cn('flex h-14 items-center shrink-0', collapsed ? 'justify-center' : 'px-4 gap-2.5')}>

@@ -300,40 +300,6 @@ function ColorBadgeSelectCell({
   )
 }
 
-function EditableSelectCell({
-  id,
-  field,
-  value,
-  options,
-}: {
-  id: string
-  field: InfluencerField
-  value: string | null
-  options: readonly { value: string; label: string }[]
-}) {
-  const [selected, setSelected] = useState(value || '')
-
-  const handleChange = async (nextValue: string) => {
-    setSelected(nextValue)
-    await saveField(id, field, nextValue || null)
-  }
-
-  return (
-    <select
-      value={selected}
-      onChange={(e) => void handleChange(e.target.value)}
-      className={`w-full bg-transparent text-sm outline-none border border-transparent focus:border-zinc-300 rounded px-1 py-0.5 transition-colors cursor-pointer ${!selected ? 'text-zinc-300' : ''}`}
-    >
-      <option value="">-</option>
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
-  )
-}
-
 function EditableMustDoCell({ id, value }: { id: string; value: boolean }) {
   const [mustDo, setMustDo] = useState(value)
 

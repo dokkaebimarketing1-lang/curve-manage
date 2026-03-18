@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { ImagePlus, Loader2 } from 'lucide-react'
 

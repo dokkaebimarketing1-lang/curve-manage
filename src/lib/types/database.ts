@@ -35,10 +35,20 @@ export interface Influencer {
   updated_at: string
 }
 
-export interface InfluencerInsert
-  extends Omit<Influencer, 'id' | 'no' | 'created_at' | 'updated_at'> {}
+export type InfluencerInsert = Omit<Influencer, 'id' | 'no' | 'created_at' | 'updated_at'>
 
-export interface InfluencerUpdate extends Partial<InfluencerInsert> {}
+export type InfluencerUpdate = Partial<InfluencerInsert>
+
+// ──────────────────────────────────────────
+// CustomTab
+// ──────────────────────────────────────────
+export interface CustomTab {
+  id: string
+  value: string
+  label: string
+  sort_order: number
+  created_at: string
+}
 
 // ──────────────────────────────────────────
 // Folder
@@ -51,8 +61,8 @@ export interface Folder {
   created_at: string
 }
 
-export interface FolderInsert extends Omit<Folder, 'id' | 'created_at'> {}
-export interface FolderUpdate extends Partial<FolderInsert> {}
+export type FolderInsert = Omit<Folder, 'id' | 'created_at'>
+export type FolderUpdate = Partial<FolderInsert>
 
 // ──────────────────────────────────────────
 // AdCard
@@ -71,8 +81,8 @@ export interface AdCard {
   updated_at: string
 }
 
-export interface AdCardInsert extends Omit<AdCard, 'id' | 'created_at' | 'updated_at'> {}
-export interface AdCardUpdate extends Partial<AdCardInsert> {}
+export type AdCardInsert = Omit<AdCard, 'id' | 'created_at' | 'updated_at'>
+export type AdCardUpdate = Partial<AdCardInsert>
 
 // ──────────────────────────────────────────
 // AdReference
@@ -95,10 +105,9 @@ export interface AdReference {
   updated_at: string
 }
 
-export interface AdReferenceInsert
-  extends Omit<AdReference, 'id' | 'no' | 'created_at' | 'updated_at'> {}
+export type AdReferenceInsert = Omit<AdReference, 'id' | 'no' | 'created_at' | 'updated_at'>
 
-export interface AdReferenceUpdate extends Partial<AdReferenceInsert> {}
+export type AdReferenceUpdate = Partial<AdReferenceInsert>
 
 // ──────────────────────────────────────────
 // Action Result Wrapper

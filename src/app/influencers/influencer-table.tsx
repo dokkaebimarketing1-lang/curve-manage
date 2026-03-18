@@ -11,8 +11,9 @@ import {
   VisibilityState,
 } from '@tanstack/react-table'
 import { columns as allColumns } from './columns'
-import { Influencer } from '@/lib/types/database'
+import { CustomTab, Influencer } from '@/lib/types/database'
 import { createInfluencer, deleteInfluencer, updateInfluencerField } from '@/lib/actions/influencer'
+import { createCustomTab, deleteCustomTab } from '@/lib/actions/custom-tab'
 import { TAB_PRESETS } from '@/lib/filters/influencer-filters'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -31,9 +32,9 @@ import { DetailPanel } from './detail-panel'
 interface InfluencerTableProps {
   initialData: Influencer[]
   tabCounts?: Record<string, number>
+  initialCustomTabs?: CustomTab[]
 }
 
-const CUSTOM_TABS_STORAGE_KEY = 'influencer-custom-tabs'
 const BASE_TABS = TAB_PRESETS.map((tab) => ({ value: tab.value, label: tab.label }))
 
 function toTabValue(label: string): string {
@@ -66,7 +67,7 @@ function exportToCsv(rows: Influencer[]) {
   URL.revokeObjectURL(url)
 }
 
-export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTableProps) {
+export function InfluencerTable({ initialData, tabCounts = {}, initialCustomTabs = [] }: InfluencerTableProps) {
   const data = initialData
   const router = useRouter()
   const pathname = usePathname()
@@ -79,24 +80,9 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [bulkAction, setBulkAction] = useState(false)
   const [detailRow, setDetailRow] = useState<Influencer | null>(null)
-  const [customTabs, setCustomTabs] = useState<{ value: string; label: string }[]>([])
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(CUSTOM_TABS_STORAGE_KEY)
-      if (!raw) return
-      const parsed = JSON.parse(raw) as Array<{ value: string; label: string }>
-      if (!Array.isArray(parsed)) return
-      const safeTabs = parsed.filter((t) => t && typeof t.value === 'string' && typeof t.label === 'string' && t.value && t.label)
-      setCustomTabs(safeTabs)
-    } catch {
-      // ignore invalid localStorage payload
-    }
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem(CUSTOM_TABS_STORAGE_KEY, JSON.stringify(customTabs))
-  }, [customTabs])
+  const [customTabs, setCustomTabs] = useState<{ id: string; value: string; label: string }[]>(
+    initialCustomTabs.map((tab) => ({ id: tab.id, value: tab.value, label: tab.label }))
+  )
 
   const tabs = useMemo(() => {
     const existing = new Set(BASE_TABS.map((t) => t.value))
@@ -191,7 +177,7 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
   const selectedCount = Object.keys(rowSelection).length
   const activeTab = searchParams.get('tab') ?? 'all'
 
-  const addCustomTab = useCallback(() => {
+  const addCustomTab = useCallback(async () => {
     const labelInput = window.prompt('추가할 탭 이름을 입력하세요')
     if (!labelInput) return
 
@@ -207,17 +193,35 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
       i += 1
     }
 
-    const next = { value, label }
-    setCustomTabs((prev) => [...prev, next])
-    handleTabChange(value)
-  }, [handleTabChange, tabs])
+    const result = await createCustomTab(value, label)
+    if (!result.success || !result.data) {
+      toast.error(result.error ?? '탭 추가 실패')
+      return
+    }
 
-  const removeCustomTab = useCallback((value: string) => {
+    const createdTab = result.data
+
+    setCustomTabs((prev) => [...prev, { id: createdTab.id, value: createdTab.value, label: createdTab.label }])
+    handleTabChange(value)
+    router.refresh()
+  }, [handleTabChange, router, tabs])
+
+  const removeCustomTab = useCallback(async (value: string) => {
+    const target = customTabs.find((tab) => tab.value === value)
+    if (!target) return
+
+    const result = await deleteCustomTab(target.id)
+    if (!result.success) {
+      toast.error(result.error ?? '탭 삭제 실패')
+      return
+    }
+
     setCustomTabs((prev) => prev.filter((tab) => tab.value !== value))
     if (activeTab === value) {
       handleTabChange('all')
     }
-  }, [activeTab, handleTabChange])
+    router.refresh()
+  }, [activeTab, customTabs, handleTabChange, router])
 
   // 체크박스 컬럼을 맨 앞에 추가
   const columnsWithSelect = useMemo(() => [
@@ -388,7 +392,9 @@ export function InfluencerTable({ initialData, tabCounts = {} }: InfluencerTable
                         )}
                       </div>
                       {header.column.getCanResize() && (
-                        <div
+                        <button
+                          type="button"
+                          aria-label="컬럼 너비 조절"
                           onMouseDown={header.getResizeHandler()}
                           onTouchStart={header.getResizeHandler()}
                           className={`absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none hover:bg-zinc-400 ${header.column.getIsResizing() ? 'bg-zinc-500' : ''}`}
